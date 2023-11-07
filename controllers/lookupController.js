@@ -226,7 +226,7 @@ class LookupController extends BaseController {
         const { user } = req.body;
     
         // Check if user is available in database?
-        const existingUser = await this.tbl_userModel.findOne({
+        const existingUser = await this.tbl_usersModel.findOne({
           where: { email: user.email },
         });
         console.log(existingUser);
@@ -235,7 +235,7 @@ class LookupController extends BaseController {
           return res.json(existingUser);
         } else {
           // User is not available in database and new user, so we will add into database
-          const newUser = await this.tbl_userModel.create({
+          const newUser = await this.tbl_usersModel.create({
             first_name: user.first_name,
             last_name: user.last_name,
             email: user.email,
@@ -326,6 +326,7 @@ class LookupController extends BaseController {
 }
 
 // Create updateTargetByEmail
+// Create updateTargetByEmail
 async updateUserTarget(req, res) {
   const { push_up, sit_up, run, end_date, user_id } = req.body;
 
@@ -339,7 +340,7 @@ async updateUserTarget(req, res) {
       // Assuming you have a target performance record associated with the user
       const targetPerformance = await existingUser.getTbl_target_pefs();
 
-      if (targetPerformance) {
+      if (targetPerformance.length > 0) {
         // Update the target performance values
         await targetPerformance[0].update({
           push_up: push_up,
@@ -347,18 +348,65 @@ async updateUserTarget(req, res) {
           run: run,
           end_date: end_date,
         });
-        
-        return res.status(200).json({ success: true, msg: 'Target performance updated successfully.' });
+
+        return res.status(200).json({
+          success: true,
+          msg: 'Target performance updated successfully.',
+        });
       } else {
-        // Target performance record does not exist, return an error
-        return res.status(404).json({ error: true, msg: 'Target performance record not found for the user.' });
+        await this.tbl_target_pefModel.create({
+          push_up: push_up,
+          sit_up: sit_up,
+          run: run,
+          start_date: new Date(),
+          end_date: end_date,
+          user_id: user_id,
+        });
+        return res.status(200).json({
+          success: true,
+          msg: 'Target performance updated successfully.',
+        });
       }
     } else {
       // User does not exist, return an error
       return res.status(404).json({ error: true, msg: 'User not found.' });
     }
   } catch (err) {
-    return res.status(500).json({ error: true, msg: 'Internal server error.' });
+    return res
+      .status(500)
+      .json({ error: true, msg: 'Internal server error.' + err.message });
+  }
+}
+
+async updateCurrentPerf(req, res) {
+  const { push_up, email } = req.body;
+  try {
+    const existingUser = await this.tbl_usersModel.findOne({
+      where: { email: email },
+    });
+    const today = new Date();
+    today.setHours(0);
+    today.setMinutes(0);
+    today.setSeconds(0);
+    today.setMilliseconds(0);
+
+    await this.tbl_current_perfModel.update(
+      { push_up: push_up },
+      {
+        where: {
+          user_id: existingUser.id,
+          date: today,
+        },
+      }
+    );
+    return res.status(200).json({
+      success: true,
+      msg: 'Current Target performance updated successfully.',
+    });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ error: true, msg: 'Internal server error.' });
   }
 }
   

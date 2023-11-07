@@ -53,11 +53,11 @@ app.use(express.json());
 // Enable CORS access to this server
 app.use(cors());
 
-// enforce on all endpoints
-app.use(checkJwt);
-app.get('/authorized', function (req, res) {
-  res.send('Secured Resource');
-});
+// // enforce on all endpoints
+// app.use(checkJwt);
+// app.get('/authorized', function (req, res) {
+//   res.send('Secured Resource');
+// });
 
 // using the routers
 app.use('/', ipptController) //generic
